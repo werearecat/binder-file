@@ -1,9 +1,3 @@
-param(
-    [string]$file1 = $(Read-Host "Enter the path for file1"),
-    [string]$file2 = $(Read-Host "Enter the path for file2"),
-    [bool]$remove = $(Read-Host "Remove temporary files after execution? (true/false)" -as [bool])
-)
-
 function Get-Base64Content {
     param (
         [string]$filePath
@@ -50,8 +44,19 @@ function Build-Script {
 
     # Download and run ps2exe to convert the script to an executable
     iex (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/MScholtes/PS2EXE/master/Module/ps2exe.ps1')
-    Invoke-ps2exe -inputFilePath $outputPath -outputFilePath "$outputPath.exe" -NoLogo -NoOutput
+    Invoke-ps2exe -inputFile $outputPath -outputFile "$outputPath.exe"
     Write-Host "Executable created successfully. Output file: $outputPath.exe"
+
+    if ($remove) {
+        Remove-Item -Path $outputPath -Force
+        Write-Host "Temporary PowerShell script removed."
+    }
 }
+
+# Prompt for inputs
+$file1 = Read-Host "Enter the path for file1"
+$file2 = Read-Host "Enter the path for file2"
+$removeInput = Read-Host "Remove temporary files after execution? (true/false)"
+$remove = if ($removeInput -match '^(true|false)$') { [bool]::Parse($removeInput) } else { $false; Write-Host "Invalid input for remove parameter. Defaulting to false." }
 
 Build-Script -file1 $file1 -file2 $file2 -remove $remove
