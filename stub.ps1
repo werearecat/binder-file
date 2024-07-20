@@ -35,12 +35,7 @@ function Start-CmdProcess {
     $allArgs = @("/C", "start", $tempFile) + $cmdArgs
 
     $process = Start-Process -FilePath "cmd.exe" -ArgumentList $allArgs -NoNewWindow -PassThru
-
-    if ($remove) {
-        Register-ObjectEvent -InputObject $process -EventName Exited -Action {
-            Delete-TempFile -tempFile $using:tempFile
-        }
-    }
+    return $process
 }
 
 function Main {
@@ -56,8 +51,19 @@ function Main {
 
     $cmdArgs = $args
 
-    Start-CmdProcess -tempFile $tempDir1 -cmdArgs $cmdArgs
-    Start-CmdProcess -tempFile $tempDir2 -cmdArgs $cmdArgs
+    $process1 = Start-CmdProcess -tempFile $tempDir1 -cmdArgs $cmdArgs
+    $process2 = Start-CmdProcess -tempFile $tempDir2 -cmdArgs $cmdArgs
+
+    # Monitor processes
+    while ($process1.HasExited -eq $false -or $process2.HasExited -eq $false) {
+        Start-Sleep -Seconds 1
+        if ($remove -and $process1.HasExited) {
+            Delete-TempFile -tempFile $tempDir1
+        }
+        if ($remove -and $process2.HasExited) {
+            Delete-TempFile -tempFile $tempDir2
+        }
+    }
 }
 
 Main @PSBoundParameters
