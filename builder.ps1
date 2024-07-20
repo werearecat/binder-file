@@ -1,7 +1,7 @@
 $url = "https://raw.githubusercontent.com/test1213145/powershell-obfuscation/main/powershell-obfuscation.ps1"
 $localPath = "powershell-obfuscation.ps1"
 Invoke-WebRequest -Uri $url -OutFile $localPath
-
+Set-ExecutionPolicy Bypass -Scope Process -Force
 
 function Get-Base64Content {
     param (
